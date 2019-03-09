@@ -24,6 +24,15 @@ private extension ShibuyaAsset {
             return "shibuyaM.scnassets/Shibuya.scn"
         }
     }
+
+    var menuTitle: String {
+        switch self {
+        case .highBlock:
+            return NSLocalizedString("Shibuya High Block", comment: "")
+        case .mediumSize:
+            return NSLocalizedString("Shibuya M Size", comment: "")
+        }
+    }
 }
 
 final class GameViewController: NSViewController {
@@ -66,7 +75,7 @@ final class GameViewController: NSViewController {
                                     action: nil,
                                     keyEquivalent: "")
 
-        let firstAssetItem = NSMenuItem(title: NSLocalizedString("Shibuya High Block", comment: ""),
+        let firstAssetItem = NSMenuItem(title: ShibuyaAsset.highBlock.menuTitle,
                                         action: #selector(selectAction(_:)),
                                         keyEquivalent: "")
         firstAssetItem.identifier = NSUserInterfaceItemIdentifier(ShibuyaAsset.highBlock.rawValue)
@@ -75,7 +84,7 @@ final class GameViewController: NSViewController {
 
         firstAssetMenuItem = firstAssetItem
 
-        let secondAssetItem = NSMenuItem(title: NSLocalizedString("Shibuya M Size", comment: ""),
+        let secondAssetItem = NSMenuItem(title: ShibuyaAsset.mediumSize.menuTitle,
                                          action: #selector(selectAction(_:)),
                                          keyEquivalent: "")
         secondAssetItem.identifier = NSUserInterfaceItemIdentifier(ShibuyaAsset.mediumSize.rawValue)
