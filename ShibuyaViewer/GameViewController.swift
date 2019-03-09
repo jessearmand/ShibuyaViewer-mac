@@ -70,7 +70,7 @@ final class GameViewController: NSViewController {
         sceneView.gestureRecognizers = gestureRecognizers
     }
 
-    func setupMenus() {
+    private func setupMenus() {
         let selectItem = NSMenuItem(title: NSLocalizedString("Select", comment: ""),
                                     action: nil,
                                     keyEquivalent: "")
