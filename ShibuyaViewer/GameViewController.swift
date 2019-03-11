@@ -51,9 +51,6 @@ final class GameViewController: NSViewController {
 
         updateScene(withName: sceneName)
 
-        // set the scene to the view
-        sceneView.scene = buildScene(withSceneName: sceneName)
-
         // allows the user to manipulate the camera
         sceneView.allowsCameraControl = true
         
@@ -100,6 +97,34 @@ final class GameViewController: NSViewController {
         if let index = NSApp.mainMenu?.indexOfItem(withTitle: NSLocalizedString("File", comment: "")) {
             NSApp.mainMenu?.insertItem(selectItem, at: index + 1)
         }
+
+        if let openMenuItem = NSApp.mainMenu?
+            .item(withTitle: NSLocalizedString("File", comment: ""))?
+            .submenu?
+            .item(at: 1) {
+
+            openMenuItem.target = self
+            openMenuItem.action = #selector(handleOpenDocument(_:))
+        }
+    }
+
+    @objc func handleOpenDocument(_ menuItem: NSMenuItem) {
+        let types = ["scn", "dae"]
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        let documentController = NSDocumentController.shared
+        let result = documentController.runModalOpenPanel(panel, forTypes: types)
+        let response = NSApplication.ModalResponse(result)
+
+        guard (response == .OK) else { return }
+        guard let url = panel.url else { return }
+
+        if let scene = buildScene(fromURL: url) {
+            sceneView.scene = scene
+        }
     }
 
     @objc func selectAction(_ menuItem: NSMenuItem) {
@@ -128,14 +153,11 @@ final class GameViewController: NSViewController {
         sceneView.play(self)
     }
 
-    func buildScene(withSceneName sceneName: String) -> SCNScene? {
-        // create a new scene
-        let scene = SCNScene(named: sceneName)
-
+    func buildScene(_ scene: SCNScene) -> SCNScene {
         // create and add a camera to the scene
         let cameraNode = SCNNode()
         cameraNode.camera = SCNCamera()
-        scene?.rootNode.addChildNode(cameraNode)
+        scene.rootNode.addChildNode(cameraNode)
 
         // place the camera
         cameraNode.position = SCNVector3(x: 0, y: 0, z: 15)
@@ -145,14 +167,14 @@ final class GameViewController: NSViewController {
         lightNode.light = SCNLight()
         lightNode.light!.type = .omni
         lightNode.position = SCNVector3(x: 0, y: 10, z: 10)
-        scene?.rootNode.addChildNode(lightNode)
+        scene.rootNode.addChildNode(lightNode)
 
         // create and add an ambient light to the scene
         let ambientLightNode = SCNNode()
         ambientLightNode.light = SCNLight()
         ambientLightNode.light!.type = .ambient
         ambientLightNode.light!.color = NSColor.darkGray
-        scene?.rootNode.addChildNode(ambientLightNode)
+        scene.rootNode.addChildNode(ambientLightNode)
 
         // retrieve the camera node
         // let camera = scene.rootNode.childNode(withName: "camera", recursively: true)!
@@ -161,6 +183,26 @@ final class GameViewController: NSViewController {
         // camera.runAction(SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: 2, z: 0, duration: 1)))
 
         return scene
+    }
+
+    func buildScene(withSceneName sceneName: String) -> SCNScene? {
+        // create a new scene
+        guard let scene = SCNScene(named: sceneName) else {
+            print("\(#function) error opening scene named \(sceneName)")
+            return nil
+        }
+
+        return buildScene(scene)
+    }
+
+    func buildScene(fromURL url: URL) -> SCNScene? {
+        do {
+            let scene = try SCNScene(url: url, options: [:])
+            return scene
+        } catch {
+            print("Unable to open scene at \(url)\nerror: \(error)")
+            return nil
+        }
     }
     
     @objc func handleClick(_ gestureRecognizer: NSGestureRecognizer) {
