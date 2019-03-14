@@ -59,6 +59,8 @@ final class GameViewController: NSViewController {
 
         // configure the view
         sceneView.backgroundColor = NSColor.black
+
+        sceneView.debugOptions = [.showCameras, .showLightInfluences, .showLightExtents]
         
         // Add a click gesture recognizer
         let clickGesture = NSClickGestureRecognizer(target: self, action: #selector(handleClick(_:)))
@@ -144,43 +146,33 @@ final class GameViewController: NSViewController {
     }
 
     func updateScene(withName name: String) {
-        sceneView.stop(self)
-
         sceneName = name
 
         sceneView.scene = buildScene(withSceneName: name)
 
-        sceneView.play(self)
+        if let cameraNode = sceneView.scene?.rootNode.childNode(withName: "camera", recursively: true) {
+            if let groundNode = sceneView.scene?.rootNode.childNode(withName: "shibuya", recursively: true) {
+                SCNTransaction.animationDuration = 0.8
+                cameraNode.simdLook(at: groundNode.simdPosition)
+            }
+
+            sceneView.pointOfView = cameraNode
+        }
     }
 
     func buildScene(_ scene: SCNScene) -> SCNScene {
-        // create and add a camera to the scene
-        let cameraNode = SCNNode()
-        cameraNode.camera = SCNCamera()
-        scene.rootNode.addChildNode(cameraNode)
-
-        // place the camera
-        cameraNode.position = SCNVector3(x: 0, y: 0, z: 15)
-
-        // create and add a light to the scene
         let lightNode = SCNNode()
+        lightNode.name = "directional"
         lightNode.light = SCNLight()
-        lightNode.light!.type = .omni
-        lightNode.position = SCNVector3(x: 0, y: 10, z: 10)
+        lightNode.light?.intensity = 1000
+        lightNode.light?.type = .directional
+        lightNode.light?.color = NSColor.white
+
+        if let groundNode = sceneView.scene?.rootNode.childNode(withName: "shibuya", recursively: true) {
+            lightNode.simdPosition = float3(groundNode.simdPosition.x, groundNode.simdPosition.y + 100, groundNode.simdPosition.z)
+        }
+
         scene.rootNode.addChildNode(lightNode)
-
-        // create and add an ambient light to the scene
-        let ambientLightNode = SCNNode()
-        ambientLightNode.light = SCNLight()
-        ambientLightNode.light!.type = .ambient
-        ambientLightNode.light!.color = NSColor.darkGray
-        scene.rootNode.addChildNode(ambientLightNode)
-
-        // retrieve the camera node
-        // let camera = scene.rootNode.childNode(withName: "camera", recursively: true)!
-
-        // animate the 3d object
-        // camera.runAction(SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: 2, z: 0, duration: 1)))
 
         return scene
     }
@@ -215,7 +207,7 @@ final class GameViewController: NSViewController {
             let result = hitResults[0]
             
             // get its material
-            let material = result.node.geometry!.firstMaterial!
+            let material = result.node.geometry?.firstMaterial
             
             // highlight it
             SCNTransaction.begin()
@@ -226,12 +218,12 @@ final class GameViewController: NSViewController {
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.5
                 
-                material.emission.contents = NSColor.black
+                material?.emission.contents = NSColor.black
                 
                 SCNTransaction.commit()
             }
             
-            material.emission.contents = NSColor.red
+            material?.emission.contents = NSColor.red
             
             SCNTransaction.commit()
         }
